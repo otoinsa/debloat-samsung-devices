@@ -95,6 +95,14 @@ declare -a TWEAKS=(
 	"Force landscape orientation (apps + home):Locks rotation to landscape, disables auto-rotate:settings put system accelerometer_rotation 0;settings put system user_rotation 1"
 	"Re-enable lock screen:Restores the lock screen if you disabled it:settings put global lockscreen.disabled 0"
 	"Re-enable auto-rotate:Restores automatic screen rotation:settings put system accelerometer_rotation 1"
+
+	# Gaming
+	"Fixed performance mode [⚠ heats up]:Locks CPU/GPU to stable clocks, removes frequency variance — good for benchmarks and gaming sessions:cmd power set-fixed-performance-mode-enabled true"
+	"Disable fixed performance mode:Returns CPU/GPU to normal dynamic clocking:cmd power set-fixed-performance-mode-enabled false"
+	"Enhanced CPU responsiveness [Qualcomm]:Lets CPU spike to peak speed faster when needed — Snapdragon devices only:settings put global sem_enhanced_cpu_responsiveness 1"
+	"Set game as active standby bucket:Stops Android throttling a game's background jobs and network — replace PACKAGE with your game:am set-standby-bucket PACKAGE active"
+	"Kill all background apps before gaming:Frees maximum RAM by force-stopping cached background processes:am kill-all"
+	"Disable Bixby key / game interruptions:Blocks Bixby and game_bixby from interrupting during gameplay:settings put secure game_bixby_block 1;settings put secure bixby_enabled_from_oobe 0"
 )
 
 # --- Check ADB connection ---
