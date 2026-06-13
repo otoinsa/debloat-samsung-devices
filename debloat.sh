@@ -89,6 +89,12 @@ declare -a TWEAKS=(
 	"Restrict global background data:Blocks background network for all apps not whitelisted (like Data Saver):cmd netpolicy set restrict_background true"
 	"Block Play Store background updates:Stops Play Store from auto-downloading updates silently:cmd appops set com.android.vending RUN_IN_BACKGROUND ignore;cmd appops set com.android.vending RUN_ANY_IN_BACKGROUND deny"
 	"Block Samsung Push Service background:Stops Samsung push/sync daemon from waking the device:cmd appops set com.sec.spp.push RUN_IN_BACKGROUND ignore;cmd appops set com.sec.spp.push RUN_ANY_IN_BACKGROUND deny"
+
+	# Display & lock screen
+	"Disable lock screen [⚠ no PIN/swipe protection]:Phone wakes straight to home screen — anyone can access it:settings put global lockscreen.disabled 1"
+	"Force landscape orientation (apps + home):Locks rotation to landscape, disables auto-rotate:settings put system accelerometer_rotation 0;settings put system user_rotation 1"
+	"Re-enable lock screen:Restores the lock screen if you disabled it:settings put global lockscreen.disabled 0"
+	"Re-enable auto-rotate:Restores automatic screen rotation:settings put system accelerometer_rotation 1"
 )
 
 # --- Check ADB connection ---
