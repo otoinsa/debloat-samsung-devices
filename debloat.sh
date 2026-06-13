@@ -69,13 +69,26 @@ declare -a BLOATWARE=(
 
 # --- Performance tweaks: label:description:command(s separated by ;) ---
 declare -a TWEAKS=(
+	# UI & rendering
 	"Disable animations:Makes UI feel instant (most noticeable improvement):settings put global window_animation_scale 0;settings put global transition_animation_scale 0;settings put global animator_duration_scale 0"
 	"Speed up animations (0.5x):Snappier UI while keeping visual feedback:settings put global window_animation_scale 0.5;settings put global transition_animation_scale 0.5;settings put global animator_duration_scale 0.5"
-	"Limit background processes to 4:Frees RAM by capping cached apps (persists after reboot):/system/bin/device_config set_sync_disabled_for_tests persistent;/system/bin/device_config put activity_manager max_cached_processes 4"
 	"Force GPU rendering:Use GPU for all UI drawing, smoother scrolling:settings put global force_hw_ui 1"
-	"Disable Samsung GOS throttling:Stops Samsung CPU/GPU throttling in games and apps:settings put secure gamesdk_version 0;settings put secure game_home_enable 0;settings put secure game_auto_temperature_control 0"
-	"Clear all app caches:One-shot cache wipe to free storage:pm trim-caches 999999999999999"
-	"Disable RAM Plus / ZRAM swap:Stops slow storage swapping — only good if phone has 4GB+ RAM:settings put global zram_enabled 0;settings put global ram_expand_size_list 0"
+
+	# Memory & CPU
+	"Limit background processes to 4:Frees RAM by capping cached apps — persists after reboot:/system/bin/device_config set_sync_disabled_for_tests persistent;/system/bin/device_config put activity_manager max_cached_processes 4"
+	"Disable Samsung GOS throttling:Stops Samsung throttling CPU/GPU in games and apps:settings put secure gamesdk_version 0;settings put secure game_home_enable 0;settings put secure game_auto_temperature_control 0"
+	"Disable RAM Plus / ZRAM swap:Stops slow storage swapping — only beneficial on 4GB+ RAM:settings put global zram_enabled 0;settings put global ram_expand_size_list 0"
+
+	# Storage
+	"Clear all app caches:One-shot cache wipe to free up storage:pm trim-caches 999999999999999"
+
+	# Background activity & updates
+	"Disable Samsung OTA updates:Stops automatic OS update downloads and notifications:pm disable-user --user 0 com.sec.android.soagent;pm disable-user --user 0 com.wssyncmldm;settings put global ota_disable_automatic_update 1"
+	"Disable Samsung update center:Removes Software Update entry and its background polling:pm disable-user --user 0 com.samsung.android.app.updatecenter;pm disable-user --user 0 com.samsung.android.sdm.config"
+	"Enable adaptive battery:Lets Android learn which apps you use and restrict the rest:settings put global adaptive_battery_management_enabled 1"
+	"Restrict global background data:Blocks background network for all apps not whitelisted (like Data Saver):cmd netpolicy set restrict_background true"
+	"Block Play Store background updates:Stops Play Store from auto-downloading updates silently:cmd appops set com.android.vending RUN_IN_BACKGROUND ignore;cmd appops set com.android.vending RUN_ANY_IN_BACKGROUND deny"
+	"Block Samsung Push Service background:Stops Samsung push/sync daemon from waking the device:cmd appops set com.sec.spp.push RUN_IN_BACKGROUND ignore;cmd appops set com.sec.spp.push RUN_ANY_IN_BACKGROUND deny"
 )
 
 # --- Check ADB connection ---
