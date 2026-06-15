@@ -504,6 +504,7 @@ while true; do
 	echo "  [1]  Remove bloatware"
 	echo "  [2]  Apply performance tweaks"
 	echo "  [3]  Remap gamepad buttons"
+	echo "  [4]  Root phone (Magisk)"
 	echo "  [q]  Quit"
 	echo ""
 	read -p "  > " choice
@@ -512,7 +513,8 @@ while true; do
 		1) run_debloat ;;
 		2) run_tweaks ;;
 		3) run_gamepad ;;
+		4) echo ""; exec "$(dirname "$0")/root.sh" ;;
 		q|Q) echo ""; echo "Goodbye!"; exit 0 ;;
-		*) echo "  Enter 1, 2, 3, or q." ;;
+		*) echo "  Enter 1, 2, 3, 4, or q." ;;
 	esac
 done

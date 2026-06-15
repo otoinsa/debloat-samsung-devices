@@ -1,0 +1,7 @@
+# firmware downloads and patched images — these are large binary files
+tmp/firmware/*
+tmp/patched/*
+
+# keep the directory structure
+!tmp/firmware/.gitkeep
+!tmp/patched/.gitkeep
