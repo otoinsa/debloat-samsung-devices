@@ -367,21 +367,16 @@ run_gamepad() {
 	echo "  Gamepad Button Remapper"
 	echo "  ============================================"
 	echo ""
-	echo "  This works by granting KeyMapper app its ADB"
-	echo "  permission so it can remap buttons persistently"
-	echo "  without root. It also lets you test any button"
-	echo "  by sending its keyevent directly to the device."
-	echo ""
-	echo "  ⚠  Remappings tested here are one-shot (not"
-	echo "     persistent). For persistent remaps, use the"
-	echo "     KeyMapper app after granting it permission."
+	echo "  Most buttons: grant KeyMapper permission (option 1)"
+	echo "  Screenshot button: requires root keylayout (option 4)"
 	echo ""
 
 	while true; do
 		echo "  ─────────────────────────────────────────────"
-		echo "  [1]  Grant KeyMapper ADB permission (do once)"
-		echo "  [2]  Test a button (sends keyevent live)"
+		echo "  [1]  Grant KeyMapper ADB permission (no root)"
+		echo "  [2]  Test a button — send keyevent live"
 		echo "  [3]  Detect which button I pressed"
+		echo "  [4]  Install keylayout via root (remaps screenshot → Home)"
 		echo "  [b]  Back"
 		echo ""
 		read -p "  > " gp_choice
@@ -456,9 +451,6 @@ run_gamepad() {
 					echo "❌ failed"
 				fi
 				echo ""
-				echo "  Note: to make this permanent, use KeyMapper"
-				echo "  after granting it permission (option 1)."
-				echo ""
 				read -p "  Press Enter to continue..." _
 				;;
 
@@ -466,20 +458,83 @@ run_gamepad() {
 			3)
 				echo ""
 				echo "  Press any gamepad button on your controller."
-				echo "  Listening for 5 seconds... (Ctrl+C to stop early)"
+				echo "  Listening for 5 seconds..."
 				echo ""
-				# Capture getevent output for 5 seconds, filter for button events
 				$ADB shell "timeout 5 getevent -l 2>/dev/null" | grep -E "EV_KEY|BTN|BUTTON|ABS" | while IFS= read -r line; do
 					echo "  $line"
 				done
 				echo ""
-				echo "  Use the keycode shown above to identify your button."
-				echo "  Cross-reference with the list in option 2."
+				read -p "  Press Enter to continue..." _
+				;;
+
+			# --- Install .kl keylayout via root — remaps screenshot button to Home ---
+			4)
+				echo ""
+				echo "  Installs Vendor_413d_Product_2103.kl onto the device"
+				echo "  via Magisk root (su). Remaps the screenshot button"
+				echo "  on your Zikway Gamwing to Home, system-wide."
+				echo ""
+				echo "  Requirements: phone must already be rooted with Magisk."
+				echo "  Run option [4] Root phone from the main menu first."
+				echo ""
+				read -p "  Proceed? (yes/no): " confirm
+				[ "$confirm" != "yes" ] && echo "  Cancelled." && continue
+
+				SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+				KL_NAME="Vendor_413d_Product_2103.kl"
+				KL_DEST="/system/usr/keylayout/$KL_NAME"
+				KL_TMP="/tmp/$KL_NAME"
+
+				# Write the keylayout file locally
+				cat > "$KL_TMP" << 'KLEOF'
+# Zikway Gamwing AoBing Max — custom keylayout (Vendor 413d / Product 2103)
+# Remaps screenshot button (consumer control) to Home
+key 102  HOME
+key 115  VOLUME_UP
+key 116  POWER
+
+# Standard gamepad buttons
+key 304  BUTTON_A
+key 305  BUTTON_B
+key 307  BUTTON_X
+key 308  BUTTON_Y
+key 310  BUTTON_L1
+key 311  BUTTON_R1
+key 312  BUTTON_L2
+key 313  BUTTON_R2
+key 314  BUTTON_THUMBL
+key 315  BUTTON_THUMBR
+key 316  BUTTON_MODE
+key 317  BUTTON_START
+key 318  BUTTON_SELECT
+KLEOF
+
+				echo ""
+				printf "  Pushing keylayout to /sdcard/... "
+				$ADB push "$KL_TMP" /sdcard/Download/"$KL_NAME" >/dev/null 2>&1 && echo "✅" || { echo "❌ push failed"; continue; }
+
+				printf "  Copying to $KL_DEST via su... "
+				RESULT=$($ADB shell "su -c 'cp /sdcard/Download/$KL_NAME $KL_DEST && chmod 644 $KL_DEST && echo OK'" 2>/dev/null | tr -d '\r')
+
+				if [ "$RESULT" = "OK" ]; then
+					echo "✅"
+					echo ""
+					echo "  Keylayout installed. Reconnect the gamepad"
+					echo "  (or reboot) and the screenshot button will go Home."
+					echo ""
+					read -p "  Reboot now? (yes/no): " do_reboot
+					[ "$do_reboot" = "yes" ] && $ADB reboot
+				else
+					echo "❌"
+					echo ""
+					echo "  Root access denied or Magisk not active."
+					echo "  Verify root: adb shell su -c 'id'"
+				fi
 				echo ""
 				read -p "  Press Enter to continue..." _
 				;;
 
-			*) echo "  Enter 1, 2, 3, or b." ;;
+			*) echo "  Enter 1, 2, 3, 4, or b." ;;
 		esac
 	done
 }
