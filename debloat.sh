@@ -312,6 +312,179 @@ run_tweaks() {
 }
 
 # ============================================================
+# GAMEPAD REMAP MODE
+# ============================================================
+
+# Standard Android gamepad buttons with their keyevent codes
+declare -a GP_BUTTONS=(
+	"A (Cross)        :KEYCODE_BUTTON_A:96"
+	"B (Circle)       :KEYCODE_BUTTON_B:97"
+	"X (Square)       :KEYCODE_BUTTON_X:99"
+	"Y (Triangle)     :KEYCODE_BUTTON_Y:100"
+	"L1 (Left Bumper) :KEYCODE_BUTTON_L1:102"
+	"R1 (Right Bumper):KEYCODE_BUTTON_R1:103"
+	"L2 (Left Trigger):KEYCODE_BUTTON_L2:104"
+	"R2 (Right Trigger):KEYCODE_BUTTON_R2:105"
+	"L3 (Left Stick)  :KEYCODE_BUTTON_THUMBL:106"
+	"R3 (Right Stick) :KEYCODE_BUTTON_THUMBR:107"
+	"Start            :KEYCODE_BUTTON_START:108"
+	"Select           :KEYCODE_BUTTON_SELECT:109"
+	"D-Pad Up         :KEYCODE_DPAD_UP:19"
+	"D-Pad Down       :KEYCODE_DPAD_DOWN:20"
+	"D-Pad Left       :KEYCODE_DPAD_LEFT:21"
+	"D-Pad Right      :KEYCODE_DPAD_RIGHT:22"
+	"D-Pad Center     :KEYCODE_DPAD_CENTER:23"
+	"Mode / Guide     :KEYCODE_BUTTON_MODE:110"
+)
+
+# Actions that can be remapped to a button (label:keyevent code or special command)
+declare -a GP_ACTIONS=(
+	"Home screen            :KEYCODE_HOME:3"
+	"Back                   :KEYCODE_BACK:4"
+	"Recents / App switcher :KEYCODE_APP_SWITCH:187"
+	"Notifications          :KEYCODE_NOTIFICATION:83"
+	"Volume Up              :KEYCODE_VOLUME_UP:24"
+	"Volume Down            :KEYCODE_VOLUME_DOWN:25"
+	"Screenshot             :KEYCODE_SYSRQ:120"
+	"Power / Screen off     :KEYCODE_POWER:26"
+	"Toggle flashlight      :KEYCODE_CAMERA:27"
+	"Media: Play/Pause      :KEYCODE_MEDIA_PLAY_PAUSE:85"
+	"Media: Next track      :KEYCODE_MEDIA_NEXT:87"
+	"Media: Prev track      :KEYCODE_MEDIA_PREVIOUS:88"
+	"Enter / Confirm        :KEYCODE_ENTER:66"
+	"Escape / Cancel        :KEYCODE_ESCAPE:111"
+	"Search                 :KEYCODE_SEARCH:84"
+	"Brightness Up          :KEYCODE_BRIGHTNESS_UP:221"
+	"Brightness Down        :KEYCODE_BRIGHTNESS_DOWN:220"
+	"Show keyboard          :KEYCODE_KEYBOARD_BACKLIGHT_UP:228"
+	"Tab                    :KEYCODE_TAB:61"
+	"Menu                   :KEYCODE_MENU:82"
+)
+
+run_gamepad() {
+	echo ""
+	echo "  ============================================"
+	echo "  Gamepad Button Remapper"
+	echo "  ============================================"
+	echo ""
+	echo "  This works by granting KeyMapper app its ADB"
+	echo "  permission so it can remap buttons persistently"
+	echo "  without root. It also lets you test any button"
+	echo "  by sending its keyevent directly to the device."
+	echo ""
+	echo "  ⚠  Remappings tested here are one-shot (not"
+	echo "     persistent). For persistent remaps, use the"
+	echo "     KeyMapper app after granting it permission."
+	echo ""
+
+	while true; do
+		echo "  ─────────────────────────────────────────────"
+		echo "  [1]  Grant KeyMapper ADB permission (do once)"
+		echo "  [2]  Test a button (sends keyevent live)"
+		echo "  [3]  Detect which button I pressed"
+		echo "  [b]  Back"
+		echo ""
+		read -p "  > " gp_choice
+
+		case "$gp_choice" in
+			b|B) return ;;
+
+			# --- Grant KeyMapper WRITE_SECURE_SETTINGS so it can remap without root ---
+			1)
+				echo ""
+				echo "  This grants io.github.sds100.keymapper"
+				echo "  WRITE_SECURE_SETTINGS permission via ADB."
+				echo "  Install KeyMapper from Play Store first."
+				echo ""
+				read -p "  Proceed? (yes/no): " confirm
+				[ "$confirm" != "yes" ] && echo "  Cancelled." && continue
+				echo ""
+				printf "  Granting permission... "
+				if $ADB shell pm grant io.github.sds100.keymapper android.permission.WRITE_SECURE_SETTINGS 2>/dev/null; then
+					echo "✅"
+					echo ""
+					echo "  KeyMapper now has full remapping capability."
+					echo "  Open the app and set your button mappings there."
+				else
+					echo "❌"
+					echo "  Make sure KeyMapper is installed:"
+					echo "  https://play.google.com/store/apps/details?id=io.github.sds100.keymapper"
+				fi
+				echo ""
+				read -p "  Press Enter to continue..." _
+				;;
+
+			# --- Send a keyevent to test a button action ---
+			2)
+				echo ""
+				echo "  Select a BUTTON to send:"
+				echo ""
+				for i in "${!GP_BUTTONS[@]}"; do
+					IFS=':' read -r label keycode code <<<"${GP_BUTTONS[$i]}"
+					printf "  %-3s %s\n" "$((i+1))" "$label"
+				done
+				echo ""
+				read -p "  Button number (or b to go back): " btn_choice
+				[ "$btn_choice" = "b" ] && continue
+				[[ ! "$btn_choice" =~ ^[0-9]+$ ]] && echo "  Invalid." && continue
+				btn_idx=$((btn_choice - 1))
+				[ "$btn_idx" -lt 0 ] || [ "$btn_idx" -ge "${#GP_BUTTONS[@]}" ] && echo "  Out of range." && continue
+
+				IFS=':' read -r btn_label btn_keycode btn_code <<<"${GP_BUTTONS[$btn_idx]}"
+
+				echo ""
+				echo "  Select the ACTION to send:"
+				echo ""
+				for i in "${!GP_ACTIONS[@]}"; do
+					IFS=':' read -r label keycode code <<<"${GP_ACTIONS[$i]}"
+					printf "  %-3s %s\n" "$((i+1))" "$label"
+				done
+				echo ""
+				read -p "  Action number (or b to go back): " act_choice
+				[ "$act_choice" = "b" ] && continue
+				[[ ! "$act_choice" =~ ^[0-9]+$ ]] && echo "  Invalid." && continue
+				act_idx=$((act_choice - 1))
+				[ "$act_idx" -lt 0 ] || [ "$act_idx" -ge "${#GP_ACTIONS[@]}" ] && echo "  Out of range." && continue
+
+				IFS=':' read -r act_label act_keycode act_code <<<"${GP_ACTIONS[$act_idx]}"
+
+				echo ""
+				printf "  Sending %-20s → %s... " "$btn_label" "$act_label"
+				if $ADB shell input keyevent "$act_code" >/dev/null 2>&1; then
+					echo "✅ sent"
+				else
+					echo "❌ failed"
+				fi
+				echo ""
+				echo "  Note: to make this permanent, use KeyMapper"
+				echo "  after granting it permission (option 1)."
+				echo ""
+				read -p "  Press Enter to continue..." _
+				;;
+
+			# --- Live button detection via getevent ---
+			3)
+				echo ""
+				echo "  Press any gamepad button on your controller."
+				echo "  Listening for 5 seconds... (Ctrl+C to stop early)"
+				echo ""
+				# Capture getevent output for 5 seconds, filter for button events
+				$ADB shell "timeout 5 getevent -l 2>/dev/null" | grep -E "EV_KEY|BTN|BUTTON|ABS" | while IFS= read -r line; do
+					echo "  $line"
+				done
+				echo ""
+				echo "  Use the keycode shown above to identify your button."
+				echo "  Cross-reference with the list in option 2."
+				echo ""
+				read -p "  Press Enter to continue..." _
+				;;
+
+			*) echo "  Enter 1, 2, 3, or b." ;;
+		esac
+	done
+}
+
+# ============================================================
 # MAIN MENU
 # ============================================================
 clear
@@ -330,6 +503,7 @@ while true; do
 	echo ""
 	echo "  [1]  Remove bloatware"
 	echo "  [2]  Apply performance tweaks"
+	echo "  [3]  Remap gamepad buttons"
 	echo "  [q]  Quit"
 	echo ""
 	read -p "  > " choice
@@ -337,7 +511,8 @@ while true; do
 	case "$choice" in
 		1) run_debloat ;;
 		2) run_tweaks ;;
+		3) run_gamepad ;;
 		q|Q) echo ""; echo "Goodbye!"; exit 0 ;;
-		*) echo "  Enter 1, 2, or q." ;;
+		*) echo "  Enter 1, 2, 3, or q." ;;
 	esac
 done
