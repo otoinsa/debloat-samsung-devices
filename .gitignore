@@ -2,6 +2,7 @@
 tmp/firmware/*
 tmp/patched/*
 
-# keep the directory structure
+# keep the directory structure and device notes
 !tmp/firmware/.gitkeep
 !tmp/patched/.gitkeep
+!tmp/DEVICE_INFO.md
